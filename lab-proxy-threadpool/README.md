@@ -59,7 +59,7 @@ involve learning about basic HTTP operation and how to use sockets to write
 programs that communicate over network connections.  In the second part, you
 will upgrade your proxy to deal with multiple concurrent connections using a
 simple, thread-based model.  This will introduce you to dealing with
-concurrency, a crucial systems concept.  In the the third part, you will modify
+concurrency, a crucial systems concept.  In the third part, you will modify
 your concurrency approach to use a threadpool.
 
 
