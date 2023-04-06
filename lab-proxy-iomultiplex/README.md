@@ -72,7 +72,7 @@ assignment:
  - `epoll_wait()` - shows the usage of the simple `epoll_wait()` function,
    including how events are returned and how errors are indicated,
  - `fcntl()`
- - `socket (7)`
+ - `socket(7)`
  - `socket()`
  - `send()`
  - `recv()`
@@ -119,18 +119,18 @@ Write functions for each of the following:
      server, it will allow you to immediately restart your proxy server after
      failure, rather than having to wait for it to time out.
    - Configure the socket to use *non-blocking I/O* (see the
-     [epoll Echo Server](echoserver-epoll/echoservere.c)).
+     [epoll Echo Server](echoserver-epoll/echoservere.c)) for an example.
    - `bind()` it to a port passed as the first argument from the
      command line, and configure it for accepting new clients with `listen()`.
-   - Return the file descriptor associated with the server socket.
+   - Return the file descriptor associated with the listening socket.
  
  - `handle_new_clients()` - Accept and prepare for communication with incoming
    clients.
    - Loop to `accept()` any and all client connections.  For each new file
      descriptor (i.e., corresponding to a new client) returned, configure it to
      use non-blocking I/O (see the man page for `fcntl()` for how to do this),
-     and register each returned client socket with the epoll instance that you
-     created for reading, using edge-triggered monitoring (i.e.,
+     and register each returned client-to-proxy socket with the epoll instance
+     that you created for reading, using edge-triggered monitoring (i.e.,
      `EPOLLIN | EPOLLET`).  You should only break out of your loop and stop
      calling `accept()` when it returns a value less than 0, in which case:
      - If `errno` is set to `EAGAIN` or `EWOULDBLOCK`, then that is an
@@ -149,7 +149,7 @@ Now add the following to `main()`:
 
  - Create an epoll instance with `epoll_create1()`.
  - Call `open_sfd()` to get your listening socket.
- - Register your listen socket with the epoll instance that you created, for
+ - Register your listening socket with the epoll instance that you created, for
    *reading* and for edge-triggered monitoring (i.e., `EPOLLIN | EPOLLET`).
  - Create a `while(1)` loop that does the following:
    - Calls `epoll_wait()` loop with a timeout of 1 second.
@@ -316,16 +316,16 @@ This includes the listen socket, the sockets associated with communications
 between client and proxy, and the sockets associated with communications
 between proxy and server.
 
-Additionally, all sockets must be registered with the epoll instance, for
-reading or writing, using edge-triggered monitoring.
+Additionally, all sockets must be registered with the epoll instance--for
+reading or writing--using edge-triggered monitoring.
 
 That being said, for simplicity, you _should_ wait to set the proxy-to-server
 socket as non-blocking _after_ you call `connect()`, rather than before.  While
 that will mean that your server not fully non-blocking, it will allow you to
 focus on the more important parts of I/O multiplexing.  This is permissible.
 
-If you choose to ignore the previous paragraph and set the socket as
-non-blocking before calling `connect()`, you can execute `connect()`
+If you choose to ignore the previous paragraph and set the proxy-to-server
+socket as non-blocking before calling `connect()`, you can execute `connect()`
 immediately, but you cannot initiate the `write()` call until `epoll_wait()`
 indicates that this socket is ready for writing. Because the socket is
 non-blocking, `connect()` will return before the connection is actually
@@ -353,8 +353,8 @@ different I/O operations related to proxy server operation:
 This is the start state for every new client request.  You should initialize
 every new client request to be in this state.
 
-In this state, read from the client socket in a loop until one of the following
-happens:
+In this state, read from the client-to-proxy socket in a loop until one of the
+following happens:
 
  - you have read the entire HTTP request from the client.  If this is the case:
    - parse the client request and create the request that you will send to the
@@ -378,12 +378,11 @@ You reach this state only after the entire request has been received from the
 client and the connection to the server has been initiated (i.e., in the
 `READ_REQUEST` state).
 
-In this state, loop to write the request to the server socket until one of the
-following happens:
+In this state, loop to write the request to to the server using the
+proxy-to-server socket until one of the following happens:
 
- - you have written the entire HTTP request to the server socket.  If this is
-   the case:
-   - register the socket with the epoll instance for reading.
+ - you have sent the entire HTTP request to the server.  If this is the case:
+   - register the proxy-to-server socket with the epoll instance for reading.
    - change state to `READ_RESPONSE`.
  - `write()` (or `send()`) returns a value less than 0.
    - If and `errno` is `EAGAIN` or `EWOULDBLOCK`, it just means that there is
@@ -400,15 +399,14 @@ following happens:
 You reach this state only after you have sent the entire HTTP request (i.e., in
 the `SEND_REQUEST` state) to the Web server.
 
-In this state, loop to read from the server socket until one of the following
-happens:
+In this state, loop to read from the proxy-to-server socket until one of the
+following happens:
 
  - you have read the entire HTTP response from the server.  Since this is
    HTTP/1.0, this is when the call to `read()` (or `recv()`) returns 0,
    indicating that the server has closed the connection.  If this is the case:
-   - close the socket that you are
-   - close up server socket.
-   - register the client socket with the epoll instance for writing.
+   - close the proxy-to-server socket.
+   - register the client-to-proxy socket with the epoll instance for writing.
    - change state to `SEND_RESPONSE`.
  - `read()` (or `recv()`) returns a value less than 0.
    - If `errno` is `EAGAIN` or `EWOULDBLOCK`, it just means that there is no
@@ -424,14 +422,14 @@ happens:
 You reach this state only after you have received the entire response from the
 Web server (i.e., in the `READ_RESPONSE` state).
 
-In this state, loop to write to the client socket until one of the following
-happens:
+In this state, loop to write the response to the client using the
+client-to-proxy socket until one of the following happens:
 
  - you have written the entire HTTP response to the client socket.  If this is
    the case:
-   - close your client socket.  You are done!
+   - close your client-to-proxy socket.  You are done!
  - `write()` (or `send()`) returns a value less than 0.
-   - If and `errno` is `EAGAIN` or `EWOULDBLOCK`, it just means that there is
+   - If `errno` is `EAGAIN` or `EWOULDBLOCK`, it just means that there is
      no buffer space available for writing to the socket; you will continue
      writing to the socket when you are notified by epoll that there is more
      buffer space available for writing.
@@ -461,9 +459,12 @@ need to know where you should start next time it's your turn (see man pages for
 `accept()` and `read()`, and search for "blocking").  For example, you should
 associate the following with each client request.
 
- - the socket corresponding to the requesting client
- - the socket corresponding to the connection to the Web server
- - the current state of the request (see [Client Request States](#client-request-states)).
+ - the client-to-proxy socket, i.e., the one corresponding to the requesting
+   client
+ - the proxy-to-server socket, i.e., the one corresponding to the connection
+   to the Web server
+ - the current state of the request
+   (see [Client Request States](#client-request-states)).
  - the buffer(s) to read into and write from
  - the total number of bytes read from the client
  - the total number of bytes to write to the server
@@ -473,6 +474,7 @@ associate the following with each client request.
 
 You might like to define a `struct request_info` (for example) that contains
 each of these members.
+
 
 ## epoll Echo Server Example
 
