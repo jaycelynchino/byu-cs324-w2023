@@ -15,15 +15,15 @@ assignment before beginning!
     Additionally, man pages for the following are also referenced throughout
     the assignment:
 
-    - `fork()`
-    - `execve()`
-    - `pipe()`
-    - `dup2()`
+    - `fork`
+    - `execve`
+    - `pipe`
+    - `dup2`
 
  2. Run `make` to build two executables: `fork` and `exec`.  These are programs
     that illustrate the system calls `fork()` and `exec()`.
 
- 3. Start a tmux session.  Create two panes, such that the window looks like
+ 3. Start a [tmux](https://github.com/cdeccio/byu-cs324-w2023/tree/master/hw-remote) session.  Create two panes, such that the window looks like
     this:
 
     ```
@@ -48,9 +48,11 @@ might want to revisit these questions after you go through that part.
 
 # Part 2: `exec()` Experimentation
 
-In the next steps, you will be using the `ps` command to examine how a process
-associated with the `exec` program changes over time. Because of this, you will
-want to read all of problems 3 through 6 before you start.
+The `ps` command will output a list of all the current running processes, along 
+with other information depending on which options you include. In the next steps, 
+you will be using the `ps` command to examine how a process associated with the `exec` 
+program changes over time. Because of this, you will want to read all of problems 3 
+through 6 before you start.
 
  3. In the left ("command execution") pane of your tmux window, run the `exec`
     program, passing `/bin/cat` as the first command-line argument. *Show your
@@ -147,7 +149,7 @@ this, you will want to read all of problems 10 through 17 before you start.
      `ps` command should be different.
 
  14. Add the line of code referenced in question 12 to the location referenced
-     in question 13.  Then call `make` to re-compiled `fork.c`. (Note that you
+     in question 13.  Then call `make` to re-compile `fork.c`. (Note that you
      may also need to add a few `#include` statements at the top of the file
      for it to compile and run properly.  See the man page for the function to
      learn which to include.)
@@ -227,7 +229,7 @@ the same system-wide file description can write to the same open file.
      Re-`make` and run the newly recompiled `fork`. *Using `cat`, show the
      contents of the `fork-output.txt` file you created.*
 
- 19. *Based on the contents of `fork-output.txt`, Which process(es) wrote to
+ 19. *Based on the contents of `fork-output.txt`, which process(es) wrote to
      the file?*
 
  20. *Based on both the contents of `fork-output.txt` and what was written to
