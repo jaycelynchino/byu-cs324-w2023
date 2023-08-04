@@ -159,15 +159,18 @@ grep bar somefile.txt | awk '{ print $8 }' | base64 -d
 ## Other Helps
 
  - Use the man pages to learn about a command, as they are the primary
-   documentation!  You can also find helpful examples on the Web.
+   documentation!  You can also find helpful examples on the web.
  - Where a pipelined command begins with a command that can receive input from
    stdin, and the initial input is a file, one way of doing it is to use `<` to
-   open the file and send it to the stdin of the first command.
+   open the file and send it to the stdin of the first command. For example:
+   ```
+   echo < file.txt
+   ```
  - To suspend the pipeline currently running in the foreground, use `ctrl`+`z`.
    Use `fg` to resume.  For more information, See the sections on
    `REDIRECTION`, `Pipelines` (under `SHELL GRAMMAR`), and `JOB CONTROL` in the
    `bash` man page.
- - You can duplicate stderr output on stdout by using `2>&1`.
+ - You can duplicate stderr output on stdout by using `2>&1`. 
  - You can redirect stderr output to `/dev/null` by adding `2> /dev/null` to
    the end of a command.
  - The `awk` command is pretty extensive and indeed includes a whole language.
